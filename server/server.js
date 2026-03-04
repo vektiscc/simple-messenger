@@ -7,69 +7,72 @@ const app = express();
 app.use(cors());
 
 const server = http.createServer(app);
+
 const io = new Server(server, {
-  cors: { origin: "*" }
+  cors: {
+    origin: "*",
+  }
 });
 
-let users = {};
-
-function broadcastUsers() {
-  io.emit("online_users", Object.keys(users));
-}
+const users = {}; // userId -> { nickname, socketId }
 
 io.on("connection", (socket) => {
 
-  socket.on("register", (nickname) => {
-    if (users[nickname]) {
+  socket.on("join", ({ userId, nickname }) => {
+
+    // проверка занят ли ник онлайн
+    const nicknameTaken = Object.values(users).some(
+      u => u.nickname === nickname && u.socketId
+    );
+
+    if (nicknameTaken) {
       socket.emit("nickname_taken");
       return;
     }
 
-    users[nickname] = { socketId: socket.id };
+    users[userId] = {
+      nickname,
+      socketId: socket.id
+    };
+
+    socket.userId = userId;
     socket.nickname = nickname;
 
-    socket.emit("register_success");
-    broadcastUsers();
+    io.emit("users_update", users);
   });
 
-  socket.on("start_chat", (targetNick) => {
-    const target = users[targetNick];
-    if (!target) {
-      socket.emit("user_not_found");
-      return;
-    }
+  socket.on("start_dialog", ({ from, to }) => {
+    const room = [from, to].sort().join("_");
+    socket.join(room);
+  });
 
-    const roomId = [socket.nickname, targetNick].sort().join("_");
-
-    socket.join(roomId);
-    io.sockets.sockets.get(target.socketId)?.join(roomId);
-
-    io.to(roomId).emit("chat_started", {
-      room: roomId,
-      users: [socket.nickname, targetNick]
+  socket.on("send_message", ({ room, messageId, text, time }) => {
+    io.to(room).emit("receive_message", {
+      room,
+      messageId,
+      authorId: socket.userId,
+      authorName: socket.nickname,
+      text,
+      time
     });
   });
-  
-socket.on("send_message", ({ room, message, time }) => {
-  io.to(room).emit("receive_message", {
-    room,
-    author: socket.nickname,
-    message,
-    time
+
+  socket.on("delete_message", ({ room, messageId }) => {
+    io.to(room).emit("message_deleted", { room, messageId });
   });
-});
+
+  socket.on("delete_chat", ({ room }) => {
+    io.to(room).emit("chat_deleted", { room });
+  });
 
   socket.on("disconnect", () => {
-    if (socket.nickname) {
-      delete users[socket.nickname];
-      broadcastUsers();
+    if (socket.userId && users[socket.userId]) {
+      users[socket.userId].socketId = null;
+      io.emit("users_update", users);
     }
   });
-
 });
 
 server.listen(3001, () => {
-  console.log("Server running");
+  console.log("Server running on port 3001");
 });
-
-
