@@ -1,72 +1,153 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
-
-const app = express();
-app.use(cors());
-
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
-
-let users = {};
-
-function broadcastUsers() {
-  io.emit("online_users", Object.keys(users));
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Messenger</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #1e1f22;
+  color: #e3e3e3;
 }
 
-io.on("connection", (socket) => {
+h2 {
+  font-weight: 500;
+}
 
-  socket.on("register", (nickname) => {
-    if (users[nickname]) {
-      socket.emit("nickname_taken");
-      return;
-    }
+input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #2b2d31;
+  color: white;
+  outline: none;
+}
 
-    users[nickname] = { socketId: socket.id };
-    socket.nickname = nickname;
+button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background-color: #10a37f;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
 
-    socket.emit("register_success");
-    broadcastUsers();
-  });
+button:hover {
+  background-color: #0e8c6c;
+}
 
-  socket.on("start_chat", (targetNick) => {
-    const target = users[targetNick];
-    if (!target) {
-      socket.emit("user_not_found");
-      return;
-    }
+#chat {
+  margin-top: 15px;
+  height: 350px;
+  overflow-y: auto;
+  padding: 10px;
+  background-color: #2b2d31;
+  border-radius: 12px;
+}
 
-    const roomId = [socket.nickname, targetNick].sort().join("_");
+.message {
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background-color: #3a3d42;
+  border-radius: 10px;
+  max-width: 70%;
+}
 
-    socket.join(roomId);
-    io.sockets.sockets.get(target.socketId)?.join(roomId);
+.message.self {
+  background-color: #10a37f;
+  align-self: flex-end;
+}
 
-    io.to(roomId).emit("chat_started", {
-      room: roomId,
-      users: [socket.nickname, targetNick]
-    });
-  });
+#messenger {
+  display: flex;
+  flex-direction: column;
+}
 
-  socket.on("send_message", ({ room, message, time }) => {
-    io.to(room).emit("receive_message", {
-      author: socket.nickname,
-      message,
-      time
-    });
-  });
+#chat {
+  display: flex;
+  flex-direction: column;
+}
+</style>
+</head>
+<body>
 
-  socket.on("disconnect", () => {
-    if (socket.nickname) {
-      delete users[socket.nickname];
-      broadcastUsers();
-    }
-  });
+<h2>Simple Messenger</h2>
 
+<div id="login">
+<input id="nickname" placeholder="Ваш ник">
+<button onclick="register()">Войти</button>
+</div>
+
+<div id="startChat" style="display:none;">
+<input id="targetNick" placeholder="Кому написать">
+<button onclick="startChat()">Начать чат</button>
+</div>
+
+<div id="messenger" style="display:none;">
+<div id="chat"></div>
+<input id="messageInput">
+<button onclick="sendMessage()">Отправить</button>
+</div>
+
+<script>
+const socket = io("https://simple-messenger-xh9u.onrender.com");
+
+let currentRoom = "";
+
+function register(){
+  const nick = document.getElementById("nickname").value.trim();
+  if (!nick) return alert("Введите ник");
+
+  socket.emit("register", nick);
+}
+
+  socket.on("nickname_taken", ()=>{
+  alert("Этот ник уже используется");
 });
 
-server.listen(3001, () => {
-  console.log("Server running");
+socket.on("register_success", ()=>{
+  document.getElementById("login").style.display="none";
+  document.getElementById("startChat").style.display="block";
 });
+
+function startChat(){
+  const target = document.getElementById("targetNick").value;
+  socket.emit("start_chat", target);
+}
+
+socket.on("chat_started", (room)=>{
+  currentRoom = room;
+  document.getElementById("startChat").style.display="none";
+  document.getElementById("messenger").style.display="block";
+});
+
+socket.on("user_not_found", ()=>{
+  alert("Пользователь не онлайн");
+});
+
+function sendMessage(){
+  const message = document.getElementById("messageInput").value;
+  socket.emit("send_message", { room: currentRoom, message });
+  document.getElementById("messageInput").value="";
+}
+
+socket.on("receive_message", (data)=>{
+  const div=document.createElement("div");
+div.classList.add("message");
+if (data.author === document.getElementById("nickname").value) {
+  div.classList.add("self");
+}
+div.innerHTML = "<b>" + data.author + ":</b><br>" + data.message;
+  document.getElementById("chat").appendChild(div);
+});
+</script>
+
+</body>
+
+</html>
+
+
+
