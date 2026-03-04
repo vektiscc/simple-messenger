@@ -15,10 +15,16 @@ let users = {};
 
 io.on("connection", (socket) => {
 
-  socket.on("register", (nickname) => {
-    users[nickname] = socket.id;
-    socket.nickname = nickname;
-  });
+socket.on("register", (nickname) => {
+  if (users[nickname]) {
+    socket.emit("nickname_taken");
+    return;
+  }
+
+  users[nickname] = socket.id;
+  socket.nickname = nickname;
+  socket.emit("register_success");
+});
 
   socket.on("start_chat", (targetNick) => {
     const targetId = users[targetNick];
@@ -50,4 +56,5 @@ io.on("connection", (socket) => {
 
 server.listen(3001, () => {
   console.log("Server running");
+
 });
