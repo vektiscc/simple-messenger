@@ -243,10 +243,37 @@ document.getElementById("messageInput")
     }
   });
 
+  function renderChat(){
+  const chatDiv = document.getElementById("chat");
+  chatDiv.innerHTML = "";
+
+  const messages = chats[currentRoom] || [];
+
+  messages.forEach(data=>{
+    const div=document.createElement("div");
+    div.classList.add("message");
+
+    if(data.author === myNickname){
+      div.classList.add("self");
+    }
+
+    div.innerHTML = `
+      <div><b>${data.author}</b></div>
+      <div>${data.message}</div>
+      <div class="time">${data.time}</div>
+    `;
+
+    chatDiv.appendChild(div);
+  });
+
+  chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+  
 </script>
 
 </body>
 </html>
+
 
 
 
