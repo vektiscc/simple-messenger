@@ -201,12 +201,12 @@ socket.on("chat_started", (data)=>{
 });
 
 socket.on("receive_message", (data)=>{
-  const div=document.createElement("div");
-  div.classList.add("message");
+  if (!chats[currentRoom]) return;
 
-  if(data.author === myNickname){
-    div.classList.add("self");
-  }
+  chats[currentRoom].push(data);
+
+  renderChat();
+});
 
   div.innerHTML = `
     <div><b>${data.author}</b></div>
@@ -247,5 +247,6 @@ document.getElementById("messageInput")
 
 </body>
 </html>
+
 
 
