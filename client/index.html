@@ -151,7 +151,7 @@ const socket = io("https://simple-messenger-xh9u.onrender.com");
 
 let myNickname = "";
 let currentRoom = "";
-let chats = {};   // хранилище сообщений
+let chats = {};
 
 function register(){
   const nick = document.getElementById("nickname").value.trim();
@@ -197,29 +197,15 @@ socket.on("chat_started", (data)=>{
     chats[currentRoom] = [];
   }
 
-  renderChat();
+  renderChat(currentRoom);
 });
 
 socket.on("receive_message", (data)=>{
-  if (!chats[data.room]) {
-    chats[data.room] = [];
-  }
+  if (!chats[currentRoom]) return;
 
-  chats[data.room].push(data);
+  chats[currentRoom].push(data);
 
-  if (data.room === currentRoom) {
-    renderChat();
-  }
-});
-
-  div.innerHTML = `
-    <div><b>${data.author}</b></div>
-    <div>${data.message}</div>
-    <div class="time">${data.time}</div>
-  `;
-
-  document.getElementById("chat").appendChild(div);
-  document.getElementById("chat").scrollTop = 999999;
+  renderChat(currentRoom);
 });
 
 function sendMessage(){
@@ -247,13 +233,11 @@ document.getElementById("messageInput")
     }
   });
 
-  function renderChat(){
+function renderChat(room){
   const chatDiv = document.getElementById("chat");
   chatDiv.innerHTML = "";
 
-  const messages = chats[currentRoom] || [];
-
-  messages.forEach(data=>{
+  chats[room].forEach(data=>{
     const div=document.createElement("div");
     div.classList.add("message");
 
@@ -272,11 +256,11 @@ document.getElementById("messageInput")
 
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
-  
-</script>
 
+</script>
 </body>
 </html>
+
 
 
 
