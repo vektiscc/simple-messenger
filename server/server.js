@@ -51,11 +51,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_message", ({ room, message, time }) => {
-    io.to(room).emit("receive_message", {
-      author: socket.nickname,
-      message,
-      time
-    });
+io.to(room).emit("receive_message", {
+  room,
+  author: socket.nickname,
+  message,
+  time
+});
   });
 
   socket.on("disconnect", () => {
@@ -70,3 +71,4 @@ io.on("connection", (socket) => {
 server.listen(3001, () => {
   console.log("Server running");
 });
+
