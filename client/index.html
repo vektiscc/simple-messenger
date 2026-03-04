@@ -35,10 +35,10 @@ const socket = io("https://simple-messenger-xh9u.onrender.com");
 let currentRoom = "";
 
 function register(){
-  const nick = document.getElementById("nickname").value;
+  const nick = document.getElementById("nickname").value.trim();
+  if (!nick) return alert("Введите ник");
+
   socket.emit("register", nick);
-  document.getElementById("login").style.display="none";
-  document.getElementById("startChat").style.display="block";
 }
 
 function startChat(){
@@ -72,3 +72,4 @@ socket.on("receive_message", (data)=>{
 </body>
 
 </html>
+
