@@ -201,11 +201,15 @@ socket.on("chat_started", (data)=>{
 });
 
 socket.on("receive_message", (data)=>{
-  if (!chats[currentRoom]) return;
+  if (!chats[data.room]) {
+    chats[data.room] = [];
+  }
 
-  chats[currentRoom].push(data);
+  chats[data.room].push(data);
 
-  renderChat();
+  if (data.room === currentRoom) {
+    renderChat();
+  }
 });
 
   div.innerHTML = `
@@ -273,6 +277,7 @@ document.getElementById("messageInput")
 
 </body>
 </html>
+
 
 
 
