@@ -21,6 +21,13 @@ socket.on("register", (nickname) => {
     return;
   }
 
+  users[nickname] = { socketId: socket.id };
+  socket.nickname = nickname;
+
+  socket.emit("register_success");
+  broadcastUsers();
+});
+
   users[nickname] = socket.id;
   socket.nickname = nickname;
   socket.emit("register_success");
@@ -48,13 +55,20 @@ socket.on("register", (nickname) => {
     });
   });
 
-  socket.on("disconnect", () => {
+socket.on("disconnect", () => {
+  if (socket.nickname) {
     delete users[socket.nickname];
-  });
+    broadcastUsers();
+  }
+});
 
 });
 
 server.listen(3001, () => {
   console.log("Server running");
 
+  function broadcastUsers() {
+  io.emit("online_users", Object.keys(users));
+}
 });
+
