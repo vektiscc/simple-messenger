@@ -201,11 +201,18 @@ socket.on("chat_started", (data)=>{
 });
 
 socket.on("receive_message", (data)=>{
-  if (!chats[currentRoom]) return;
 
-  chats[currentRoom].push(data);
+  const room = data.room;
 
-  renderChat(currentRoom);
+  if (!chats[room]) {
+    chats[room] = [];
+  }
+
+  chats[room].push(data);
+
+  if (room === currentRoom) {
+    renderChat(room);
+  }
 });
 
 function sendMessage(){
@@ -260,6 +267,7 @@ function renderChat(room){
 </script>
 </body>
 </html>
+
 
 
 
