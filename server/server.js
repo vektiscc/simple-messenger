@@ -9,18 +9,15 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-  }
+  cors: { origin: "*" }
 });
 
-const users = {}; // userId -> { nickname, socketId }
+const users = {};
 
 io.on("connection", (socket) => {
 
   socket.on("join", ({ userId, nickname }) => {
 
-    // проверка занят ли ник онлайн
     const nicknameTaken = Object.values(users).some(
       u => u.nickname === nickname && u.socketId
     );
@@ -41,19 +38,27 @@ io.on("connection", (socket) => {
     io.emit("users_update", users);
   });
 
-  socket.on("start_dialog", ({ from, to }) => {
-    const room = [from, to].sort().join("_");
+  socket.on("typing", ({ room, to }) => {
+    io.to(room).emit("typing", {
+      from: socket.userId
+    });
+  });
+
+  socket.on("stop_typing", ({ room }) => {
+    io.to(room).emit("stop_typing", {
+      from: socket.userId
+    });
+  });
+
+  socket.on("start_dialog", ({ room }) => {
     socket.join(room);
   });
 
-  socket.on("send_message", ({ room, messageId, text, time }) => {
-    io.to(room).emit("receive_message", {
-      room,
-      messageId,
+  socket.on("send_message", (data) => {
+    io.to(data.room).emit("receive_message", {
+      ...data,
       authorId: socket.userId,
-      authorName: socket.nickname,
-      text,
-      time
+      authorName: socket.nickname
     });
   });
 
@@ -71,6 +76,7 @@ io.on("connection", (socket) => {
       io.emit("users_update", users);
     }
   });
+
 });
 
 server.listen(3001, () => {
