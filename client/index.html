@@ -13,15 +13,15 @@ body {
   color:white;
 }
 
-/* LOGIN SCREEN */
+/* LOGIN */
 
 #loginScreen {
   position:fixed;
   inset:0;
-  background:#0f1419;
   display:flex;
   justify-content:center;
   align-items:center;
+  background:#0f1419;
 }
 
 .loginBox {
@@ -54,11 +54,7 @@ body {
   font-weight:bold;
 }
 
-.loginBox button:hover {
-  background:#00e6ac;
-}
-
-/* MAIN LAYOUT */
+/* APP */
 
 #app {
   display:flex;
@@ -69,8 +65,24 @@ body {
   width:260px;
   background:#162028;
   padding:10px;
-  overflow-y:auto;
   border-right:1px solid #00c89633;
+  display:flex;
+  flex-direction:column;
+}
+
+#newChatBtn {
+  background:#00c896;
+  border:none;
+  padding:8px;
+  border-radius:8px;
+  cursor:pointer;
+  margin-bottom:10px;
+  font-weight:bold;
+}
+
+#dialogs {
+  flex:1;
+  overflow-y:auto;
 }
 
 .dialog {
@@ -87,6 +99,8 @@ body {
 .online { color:#00e676; }
 .offline { color:gray; }
 
+/* CHAT */
+
 #chat {
   flex:1;
   display:flex;
@@ -98,7 +112,6 @@ body {
   background:#162028;
   display:flex;
   justify-content:space-between;
-  align-items:center;
   border-bottom:1px solid #00c89633;
 }
 
@@ -122,13 +135,12 @@ body {
   padding:10px 14px;
   border-radius:14px;
   max-width:60%;
-  position:relative;
 }
 
 .mine {
   background:#00c896;
-  margin-left:auto;
   color:black;
+  margin-left:auto;
 }
 
 .their {
@@ -145,14 +157,16 @@ body {
   font-size:12px;
   margin-left:6px;
   cursor:pointer;
-  opacity:0.6;
 }
+
+/* INPUT */
 
 #inputArea {
   display:flex;
   padding:15px;
   background:#162028;
   border-top:1px solid #00c89633;
+  align-items:center;
 }
 
 #input {
@@ -164,18 +178,70 @@ body {
   color:white;
 }
 
-#inputArea button {
+/* YouTube-style arrow */
+
+#sendBtn {
   margin-left:10px;
-  padding:10px 15px;
-  background:#00c896;
+  background:none;
   border:none;
-  border-radius:8px;
   cursor:pointer;
-  font-weight:bold;
 }
 
-#inputArea button:hover {
-  background:#00e6ac;
+#sendBtn svg {
+  width:26px;
+  height:26px;
+  fill:#00c896;
+  transition:0.2s;
+}
+
+#sendBtn:hover svg {
+  fill:#00e6ac;
+  transform:scale(1.1);
+}
+
+/* MODAL */
+
+#modal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+.modalBox {
+  background:#1a222b;
+  width:350px;
+  max-height:500px;
+  border-radius:16px;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+}
+
+.modalBox input {
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #00c896;
+  background:#0f1419;
+  color:white;
+  margin-bottom:10px;
+}
+
+#userList {
+  flex:1;
+  overflow-y:auto;
+}
+
+.userItem {
+  padding:8px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.userItem:hover {
+  background:#00c89622;
 }
 </style>
 </head>
@@ -184,13 +250,16 @@ body {
 <div id="loginScreen">
   <div class="loginBox">
     <h2>Вход</h2>
-    <input id="nicknameInput" placeholder="Введите никнейм" />
+    <input id="nicknameInput" placeholder="Введите никнейм"/>
     <button onclick="login()">Войти</button>
   </div>
 </div>
 
 <div id="app" style="display:none;">
-  <div id="sidebar"></div>
+  <div id="sidebar">
+    <button id="newChatBtn" onclick="openModal()">➕ Новый чат</button>
+    <div id="dialogs"></div>
+  </div>
 
   <div id="chat">
     <div id="chatHeader">
@@ -199,14 +268,26 @@ body {
     </div>
     <div id="messages"></div>
     <div id="inputArea">
-      <input id="input" placeholder="Сообщение..." />
-      <button onclick="sendMessage()">➤</button>
+      <input id="input" placeholder="Сообщение..."/>
+      <button id="sendBtn" onclick="sendMessage()">
+        <!-- YouTube-like arrow -->
+        <svg viewBox="0 0 24 24">
+          <path d="M2 21L23 12 2 3v7l15 2-15 2z"/>
+        </svg>
+      </button>
     </div>
   </div>
 </div>
 
+<div id="modal">
+  <div class="modalBox">
+    <input id="searchUser" placeholder="Поиск..." oninput="renderUserList()"/>
+    <div id="userList"></div>
+  </div>
+</div>
+
 <script>
-const socket = io("https://твой-render-url"); // ← ВСТАВЬ СВОЙ URL
+const socket = io("https://твой-render-url");
 
 let userId = localStorage.getItem("userId") || crypto.randomUUID();
 localStorage.setItem("userId", userId);
@@ -216,142 +297,74 @@ let users = {};
 let dialogs = JSON.parse(localStorage.getItem("dialogs") || "{}");
 let currentRoom = null;
 
-if (nickname) {
-  startApp();
-}
+if (nickname) startApp();
 
-function login() {
-  const input = document.getElementById("nicknameInput").value.trim();
-  if (!input) return;
-  nickname = input;
+function login(){
+  nickname = document.getElementById("nicknameInput").value.trim();
+  if(!nickname) return;
   localStorage.setItem("nickname", nickname);
   startApp();
 }
 
-function startApp() {
+function startApp(){
   document.getElementById("loginScreen").style.display="none";
   document.getElementById("app").style.display="flex";
-
-  socket.emit("join", { userId, nickname });
+  socket.emit("join",{userId,nickname});
 }
 
-socket.on("nickname_taken", ()=>{
-  alert("Ник уже используется онлайн!");
-  localStorage.removeItem("nickname");
-  location.reload();
-});
-
-socket.on("users_update", (serverUsers)=>{
-  users = serverUsers;
+socket.on("users_update",(data)=>{
+  users=data;
   renderDialogs();
 });
 
 function renderDialogs(){
-  const sidebar = document.getElementById("sidebar");
-  sidebar.innerHTML="";
-
-  Object.keys(dialogs).forEach(otherId=>{
-    const div = document.createElement("div");
+  const container=document.getElementById("dialogs");
+  container.innerHTML="";
+  Object.keys(dialogs).forEach(id=>{
+    const div=document.createElement("div");
     div.className="dialog";
-
-    const isOnline = users[otherId] && users[otherId].socketId;
-    const name = dialogs[otherId].nickname;
-
-    div.innerHTML = `${name} <span class="${isOnline?'online':'offline'}">●</span>`;
-    div.onclick=()=>openDialog(otherId);
-    sidebar.appendChild(div);
+    const isOnline=users[id]&&users[id].socketId;
+    div.innerHTML=`${dialogs[id].nickname} <span class="${isOnline?'online':'offline'}">●</span>`;
+    div.onclick=()=>openDialog(id);
+    container.appendChild(div);
   });
 }
 
-function openDialog(otherId){
-  currentRoom = [userId, otherId].sort().join("_");
-  socket.emit("start_dialog",{from:userId,to:otherId});
-  document.getElementById("chatTitle").innerText = dialogs[otherId].nickname;
-  renderMessages();
+/* MODAL */
+
+function openModal(){
+  document.getElementById("modal").style.display="flex";
+  renderUserList();
 }
 
-function renderMessages(){
-  const div=document.getElementById("messages");
-  div.innerHTML="";
-  if(!currentRoom) return;
-  const msgs = dialogs[getOtherId()]?.messages || [];
+function renderUserList(){
+  const list=document.getElementById("userList");
+  list.innerHTML="";
+  const search=document.getElementById("searchUser").value.toLowerCase();
 
-  msgs.forEach(msg=>{
-    if(msg.deleted) return;
-    const m=document.createElement("div");
-    m.className="message "+(msg.authorId===userId?"mine":"their");
-    m.innerHTML=`
-      ${msg.text}
-      <span class="time">${msg.time}</span>
-      <span class="deleteBtn" onclick="deleteMessage('${msg.messageId}')">🗑</span>
-    `;
-    div.appendChild(m);
+  const onlineUsers=Object.entries(users)
+    .filter(([id,u])=>id!==userId && u.socketId)
+    .sort((a,b)=>a[1].nickname.localeCompare(b[1].nickname));
+
+  onlineUsers.forEach(([id,u])=>{
+    if(!u.nickname.toLowerCase().includes(search)) return;
+
+    const div=document.createElement("div");
+    div.className="userItem";
+    div.textContent=u.nickname;
+    div.onclick=()=>{
+      dialogs[id]={nickname:u.nickname,messages:[]};
+      localStorage.setItem("dialogs",JSON.stringify(dialogs));
+      document.getElementById("modal").style.display="none";
+      renderDialogs();
+    };
+    list.appendChild(div);
   });
-
-  div.scrollTop=div.scrollHeight;
 }
 
-function sendMessage(){
-  const input=document.getElementById("input");
-  if(!input.value||!currentRoom) return;
-
-  socket.emit("send_message",{
-    room:currentRoom,
-    messageId:crypto.randomUUID(),
-    text:input.value,
-    time:new Date().toLocaleTimeString()
-  });
-
-  input.value="";
-}
-
-socket.on("receive_message",(data)=>{
-  const otherId = data.authorId===userId ? getOtherId() : data.authorId;
-
-  if(!dialogs[otherId]){
-    dialogs[otherId]={nickname:data.authorName,messages:[]};
-  }
-
-  dialogs[otherId].messages.push(data);
-  localStorage.setItem("dialogs",JSON.stringify(dialogs));
-
-  if(data.room===currentRoom) renderMessages();
-  renderDialogs();
-});
-
-function deleteMessage(id){
-  if(!confirm("Удалить сообщение у обоих?")) return;
-  socket.emit("delete_message",{room:currentRoom,messageId:id});
-}
-
-socket.on("message_deleted",({room,messageId})=>{
-  const otherId=getOtherId();
-  dialogs[otherId].messages = dialogs[otherId].messages.map(m=>{
-    if(m.messageId===messageId) m.deleted=true;
-    return m;
-  });
-  localStorage.setItem("dialogs",JSON.stringify(dialogs));
-  if(room===currentRoom) renderMessages();
-});
-
-function deleteCurrentChat(){
-  if(!confirm("Удалить чат полностью?")) return;
-  socket.emit("delete_chat",{room:currentRoom});
-}
-
-socket.on("chat_deleted",({room})=>{
-  const otherId=getOtherId();
-  delete dialogs[otherId];
-  localStorage.setItem("dialogs",JSON.stringify(dialogs));
-  currentRoom=null;
-  document.getElementById("chatTitle").innerText="Выберите диалог";
-  renderDialogs();
-  renderMessages();
-});
-
-function getOtherId(){
-  return currentRoom?.split("_").find(id=>id!==userId);
-}
+document.getElementById("modal").onclick=(e)=>{
+  if(e.target.id==="modal") e.target.style.display="none";
+};
 </script>
 
 </body>
