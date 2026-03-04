@@ -8,6 +8,8 @@
 <style>
 body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 
+/* LOGIN */
+
 #loginScreen {
   position:fixed; inset:0;
   display:flex; justify-content:center; align-items:center;
@@ -15,25 +17,34 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 }
 
 .loginBox {
-  background:#1a222b; padding:40px;
-  border-radius:16px; width:300px;
+  background:#1a222b;
+  padding:40px;
+  border-radius:16px;
+  width:300px;
   text-align:center;
-  box-shadow:0 0 20px rgba(0,255,150,0.2);
 }
 
 .loginBox input {
-  width:100%; padding:10px; margin-top:15px;
+  width:100%;
+  padding:10px;
+  margin-top:15px;
   background:#0f1419;
   border:1px solid #00c896;
-  border-radius:8px; color:white;
+  border-radius:8px;
+  color:white;
 }
 
 .loginBox button {
-  width:100%; margin-top:15px; padding:10px;
-  background:#00c896; border:none;
-  border-radius:8px; cursor:pointer;
-  font-weight:bold;
+  width:100%;
+  margin-top:15px;
+  padding:10px;
+  background:#00c896;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
 }
+
+/* APP */
 
 #app { display:flex; height:100vh; }
 
@@ -42,12 +53,14 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   background:#162028;
   padding:10px;
   border-right:1px solid #00c89633;
-  display:flex; flex-direction:column;
+  display:flex;
+  flex-direction:column;
 }
 
 #newChatBtn {
   background:#00c896;
-  border:none; padding:8px;
+  border:none;
+  padding:10px;
   border-radius:8px;
   cursor:pointer;
   margin-bottom:10px;
@@ -77,8 +90,7 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   font-size:12px;
 }
 
-.online { color:#00e676; }
-.offline { color:gray; }
+/* CHAT */
 
 #chat { flex:1; display:flex; flex-direction:column; }
 
@@ -90,15 +102,9 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   border-bottom:1px solid #00c89633;
 }
 
-#chatHeader button {
-  background:#ff4d4d;
-  border:none; padding:6px 10px;
-  border-radius:6px; cursor:pointer;
-  color:white;
-}
-
 #messages {
-  flex:1; padding:15px;
+  flex:1;
+  padding:15px;
   overflow-y:auto;
 }
 
@@ -107,23 +113,16 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   padding:10px 14px;
   border-radius:14px;
   max-width:60%;
-  animation:fadeIn 0.18s ease-out;
+  animation:fadeIn 0.15s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity:0; transform:translateY(6px); }
+  from { opacity:0; transform:translateY(5px); }
   to { opacity:1; transform:translateY(0); }
 }
 
 .mine { background:#00c896; color:black; margin-left:auto; }
 .their { background:#1f2c36; }
-
-#typingIndicator {
-  font-size:12px;
-  opacity:0.7;
-  padding:0 15px;
-  height:18px;
-}
 
 #inputArea {
   display:flex;
@@ -154,12 +153,51 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   width:26px;
   height:26px;
   fill:#00c896;
-  transition:0.2s;
 }
 
-#sendBtn:hover svg {
-  fill:#00e6ac;
-  transform:scale(1.1);
+/* MODAL */
+
+#modal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+.modalBox {
+  background:#1a222b;
+  width:350px;
+  max-height:500px;
+  border-radius:16px;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+}
+
+.modalBox input {
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #00c896;
+  background:#0f1419;
+  color:white;
+  margin-bottom:10px;
+}
+
+#userList {
+  flex:1;
+  overflow-y:auto;
+}
+
+.userItem {
+  padding:8px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.userItem:hover {
+  background:#00c89622;
 }
 </style>
 </head>
@@ -182,10 +220,8 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   <div id="chat">
     <div id="chatHeader">
       <span id="chatTitle">Выберите диалог</span>
-      <button onclick="deleteCurrentChat()">Удалить чат</button>
     </div>
     <div id="messages"></div>
-    <div id="typingIndicator"></div>
     <div id="inputArea">
       <textarea id="input" placeholder="Сообщение..."></textarea>
       <button id="sendBtn" onclick="sendMessage()">
@@ -194,6 +230,13 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
         </svg>
       </button>
     </div>
+  </div>
+</div>
+
+<div id="modal">
+  <div class="modalBox">
+    <input id="searchUser" placeholder="Поиск..." oninput="renderUserList()"/>
+    <div id="userList"></div>
   </div>
 </div>
 
@@ -207,7 +250,6 @@ let nickname = localStorage.getItem("nickname");
 let users = {};
 let dialogs = JSON.parse(localStorage.getItem("dialogs") || "{}");
 let currentRoom = null;
-let typingTimeout;
 
 if (nickname) startApp();
 
@@ -224,12 +266,6 @@ function startApp(){
   socket.emit("join",{userId,nickname});
 }
 
-socket.on("nickname_taken",()=>{
-  alert("Ник уже используется онлайн");
-  localStorage.removeItem("nickname");
-  location.reload();
-});
-
 socket.on("users_update",(data)=>{
   users=data;
   renderDialogs();
@@ -242,26 +278,55 @@ function renderDialogs(){
     const d=dialogs[id];
     const div=document.createElement("div");
     div.className="dialog";
-    const isOnline=users[id]&&users[id].socketId;
-
     div.innerHTML=`
-      <div>${d.nickname} <span class="${isOnline?'online':'offline'}">●</span></div>
+      <div>${d.nickname}</div>
       ${d.unread?`<div class="unread">${d.unread}</div>`:""}
     `;
-
-    div.onclick=()=>{
-      d.unread=0;
-      openDialog(id);
-    };
-
+    div.onclick=()=>openDialog(id);
     container.appendChild(div);
   });
 }
+
+function openModal(){
+  document.getElementById("modal").style.display="flex";
+  renderUserList();
+}
+
+function renderUserList(){
+  const list=document.getElementById("userList");
+  list.innerHTML="";
+  const search=document.getElementById("searchUser").value.toLowerCase();
+
+  const onlineUsers=Object.entries(users)
+    .filter(([id,u])=>id!==userId && u.socketId)
+    .sort((a,b)=>a[1].nickname.localeCompare(b[1].nickname));
+
+  onlineUsers.forEach(([id,u])=>{
+    if(!u.nickname.toLowerCase().includes(search)) return;
+    if(dialogs[id]) return;
+
+    const div=document.createElement("div");
+    div.className="userItem";
+    div.textContent=u.nickname;
+    div.onclick=()=>{
+      dialogs[id]={nickname:u.nickname,messages:[],unread:0};
+      localStorage.setItem("dialogs",JSON.stringify(dialogs));
+      document.getElementById("modal").style.display="none";
+      renderDialogs();
+    };
+    list.appendChild(div);
+  });
+}
+
+document.getElementById("modal").onclick=(e)=>{
+  if(e.target.id==="modal") e.target.style.display="none";
+};
 
 function openDialog(otherId){
   currentRoom=[userId,otherId].sort().join("_");
   socket.emit("start_dialog",{room:currentRoom});
   document.getElementById("chatTitle").innerText=dialogs[otherId].nickname;
+  dialogs[otherId].unread=0;
   renderMessages();
 }
 
@@ -271,7 +336,6 @@ function renderMessages(){
   const msgs=dialogs[getOtherId()]?.messages||[];
 
   msgs.forEach(msg=>{
-    if(msg.deleted) return;
     const m=document.createElement("div");
     m.className="message "+(msg.authorId===userId?"mine":"their");
     m.innerText=msg.text;
@@ -311,7 +375,7 @@ socket.on("receive_message",(data)=>{
   dialogs[otherId].messages.push(data);
 
   if(currentRoom!==data.room){
-    dialogs[otherId].unread=(dialogs[otherId].unread||0)+1;
+    dialogs[otherId].unread++;
   }
 
   localStorage.setItem("dialogs",JSON.stringify(dialogs));
