@@ -41,6 +41,15 @@ function register(){
   socket.emit("register", nick);
 }
 
+  socket.on("nickname_taken", ()=>{
+  alert("Этот ник уже используется");
+});
+
+socket.on("register_success", ()=>{
+  document.getElementById("login").style.display="none";
+  document.getElementById("startChat").style.display="block";
+});
+
 function startChat(){
   const target = document.getElementById("targetNick").value;
   socket.emit("start_chat", target);
@@ -72,4 +81,5 @@ socket.on("receive_message", (data)=>{
 </body>
 
 </html>
+
 
