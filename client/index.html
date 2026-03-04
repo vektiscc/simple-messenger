@@ -192,7 +192,12 @@ socket.on("online_users", (users)=>{
 
 socket.on("chat_started", (data)=>{
   currentRoom = data.room;
-  document.getElementById("chat").innerHTML="";
+
+  if (!chats[currentRoom]) {
+    chats[currentRoom] = [];
+  }
+
+  renderChat();
 });
 
 socket.on("receive_message", (data)=>{
@@ -242,4 +247,5 @@ document.getElementById("messageInput")
 
 </body>
 </html>
+
 
