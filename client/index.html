@@ -136,7 +136,11 @@ function sendMessage(){
 
 socket.on("receive_message", (data)=>{
   const div=document.createElement("div");
-  div.innerHTML="<b>"+data.author+":</b> "+data.message;
+div.classList.add("message");
+if (data.author === document.getElementById("nickname").value) {
+  div.classList.add("self");
+}
+div.innerHTML = "<b>" + data.author + ":</b><br>" + data.message;
   document.getElementById("chat").appendChild(div);
 });
 </script>
@@ -144,6 +148,7 @@ socket.on("receive_message", (data)=>{
 </body>
 
 </html>
+
 
 
 
