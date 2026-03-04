@@ -243,151 +243,170 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 <script>
 const socket = io("https://simple-messenger-xh9u.onrender.com");
 
-let userId = localStorage.getItem("userId") || crypto.randomUUID();
-localStorage.setItem("userId", userId);
+let myUserId = localStorage.getItem("userId");
+let myNickname = localStorage.getItem("nickname");
 
-let nickname = localStorage.getItem("nickname");
+if (!myUserId || !myNickname) {
+  myNickname = prompt("Введите никнейм:");
+  myUserId = crypto.randomUUID();
+  localStorage.setItem("userId", myUserId);
+  localStorage.setItem("nickname", myNickname);
+}
+
+socket.emit("join", { userId: myUserId, nickname: myNickname });
+
 let users = {};
 let dialogs = JSON.parse(localStorage.getItem("dialogs") || "{}");
-let currentRoom = null;
+let currentChat = null;
 
-if (nickname) startApp();
+const dialogsList = document.getElementById("dialogs");
+const messagesContainer = document.getElementById("messages");
+const input = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const newChatBtn = document.getElementById("newChatBtn");
 
-function login(){
-  nickname = document.getElementById("nicknameInput").value.trim();
-  if(!nickname) return;
-  localStorage.setItem("nickname", nickname);
-  startApp();
+function saveDialogs() {
+  localStorage.setItem("dialogs", JSON.stringify(dialogs));
 }
 
-function startApp(){
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("app").style.display="flex";
-  socket.emit("join",{userId,nickname});
-}
-
-socket.on("users_update",(data)=>{
-  users=data;
-  renderDialogs();
-});
-
-function renderDialogs(){
-  const container=document.getElementById("dialogs");
-  container.innerHTML="";
-  Object.keys(dialogs).forEach(id=>{
-    const d=dialogs[id];
-    const div=document.createElement("div");
-    div.className="dialog";
-    div.innerHTML=`
-      <div>${d.nickname}</div>
-      ${d.unread?`<div class="unread">${d.unread}</div>`:""}
-    `;
-    div.onclick=()=>openDialog(id);
-    container.appendChild(div);
+function renderDialogs() {
+  dialogsList.innerHTML = "";
+  Object.keys(dialogs).forEach((userId) => {
+    const div = document.createElement("div");
+    div.className = "dialog";
+    div.innerText = dialogs[userId].nickname;
+    div.onclick = () => openChat(userId);
+    dialogsList.appendChild(div);
   });
 }
 
-function openModal(){
-  document.getElementById("modal").style.display="flex";
-  renderUserList();
-}
-
-function renderUserList(){
-  const list=document.getElementById("userList");
-  list.innerHTML="";
-  const search=document.getElementById("searchUser").value.toLowerCase();
-
-  const onlineUsers=Object.entries(users)
-    .filter(([id,u])=>id!==userId && u.socketId)
-    .sort((a,b)=>a[1].nickname.localeCompare(b[1].nickname));
-
-  onlineUsers.forEach(([id,u])=>{
-    if(!u.nickname.toLowerCase().includes(search)) return;
-    if(dialogs[id]) return;
-
-    const div=document.createElement("div");
-    div.className="userItem";
-    div.textContent=u.nickname;
-    div.onclick=()=>{
-      dialogs[id]={nickname:u.nickname,messages:[],unread:0};
-      localStorage.setItem("dialogs",JSON.stringify(dialogs));
-      document.getElementById("modal").style.display="none";
-      renderDialogs();
-    };
-    list.appendChild(div);
-  });
-}
-
-document.getElementById("modal").onclick=(e)=>{
-  if(e.target.id==="modal") e.target.style.display="none";
-};
-
-function openDialog(otherId){
-  currentRoom=[userId,otherId].sort().join("_");
-  socket.emit("start_dialog",{room:currentRoom});
-  document.getElementById("chatTitle").innerText=dialogs[otherId].nickname;
-  dialogs[otherId].unread=0;
+function openChat(userId) {
+  currentChat = userId;
   renderMessages();
 }
 
-function renderMessages(){
-  const div=document.getElementById("messages");
-  div.innerHTML="";
-  const msgs=dialogs[getOtherId()]?.messages||[];
+function renderMessages() {
+  messagesContainer.innerHTML = "";
+  if (!dialogs[currentChat]) return;
 
-  msgs.forEach(msg=>{
-    const m=document.createElement("div");
-    m.className="message "+(msg.authorId===userId?"mine":"their");
-    m.innerText=msg.text;
-    div.appendChild(m);
+  dialogs[currentChat].messages.forEach((msg) => {
+    const div = document.createElement("div");
+    div.className = msg.fromMe ? "my-message" : "their-message";
+    div.innerText = `${msg.message} (${msg.time})`;
+    messagesContainer.appendChild(div);
   });
-
-  div.scrollTop=div.scrollHeight;
 }
 
-function sendMessage(){
-  const input=document.getElementById("input");
-  if(!input.value.trim()||!currentRoom) return;
-
-  socket.emit("send_message",{
-    room:currentRoom,
-    messageId:crypto.randomUUID(),
-    text:input.value,
-    time:new Date().toLocaleTimeString()
-  });
-
-  input.value="";
+function createDialog(userId, nickname) {
+  if (!dialogs[userId]) {
+    dialogs[userId] = {
+      nickname,
+      messages: []
+    };
+    saveDialogs();
+    renderDialogs();
+  }
 }
 
-document.getElementById("input").addEventListener("keydown",(e)=>{
-  if(e.key==="Enter"&&!e.shiftKey){
+newChatBtn.onclick = () => {
+  const onlineUsers = Object.entries(users)
+    .filter(([id]) => id !== myUserId)
+    .sort((a, b) =>
+      a[1].nickname.localeCompare(b[1].nickname)
+    );
+
+  if (onlineUsers.length === 0) {
+    alert("Нет пользователей онлайн");
+    return;
+  }
+
+  const nickname = prompt(
+    "Введите никнейм:\n" +
+    onlineUsers.map(u => u[1].nickname).join("\n")
+  );
+
+  const selected = onlineUsers.find(
+    u => u[1].nickname.toLowerCase() === nickname?.toLowerCase()
+  );
+
+  if (!selected) return;
+
+  const [userId, data] = selected;
+
+  createDialog(userId, data.nickname);
+
+  socket.emit("create_dialog", {
+    fromUserId: myUserId,
+    toUserId: userId,
+    fromNickname: myNickname
+  });
+
+  openChat(userId);
+};
+
+sendBtn.onclick = sendMessage;
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
   }
 });
 
-socket.on("receive_message",(data)=>{
-  const otherId=data.authorId===userId?getOtherId():data.authorId;
+function sendMessage() {
+  if (!currentChat) return;
 
-  if(!dialogs[otherId])
-    dialogs[otherId]={nickname:data.authorName,messages:[],unread:0};
+  const message = input.value.trim();
+  if (!message) return;
 
-  dialogs[otherId].messages.push(data);
+  const time = new Date().toLocaleTimeString();
 
-  if(currentRoom!==data.room){
-    dialogs[otherId].unread++;
+  dialogs[currentChat].messages.push({
+    fromMe: true,
+    message,
+    time
+  });
+
+  saveDialogs();
+  renderMessages();
+
+  socket.emit("send_message", {
+    fromUserId: myUserId,
+    toUserId: currentChat,
+    message,
+    time
+  });
+
+  input.value = "";
+}
+
+socket.on("receive_message", ({ fromUserId, message, time }) => {
+  if (!dialogs[fromUserId]) {
+    createDialog(fromUserId, users[fromUserId]?.nickname || "Unknown");
   }
 
-  localStorage.setItem("dialogs",JSON.stringify(dialogs));
-  if(currentRoom===data.room) renderMessages();
-  renderDialogs();
+  dialogs[fromUserId].messages.push({
+    fromMe: false,
+    message,
+    time
+  });
+
+  saveDialogs();
+  renderMessages();
 });
 
-function getOtherId(){
-  return currentRoom?.split("_").find(id=>id!==userId);
-}
+socket.on("dialog_created", ({ userId, nickname }) => {
+  createDialog(userId, nickname);
+});
+
+socket.on("users_update", (serverUsers) => {
+  users = serverUsers;
+});
+
+renderDialogs();
 </script>
 
 </body>
 </html>
+
 
