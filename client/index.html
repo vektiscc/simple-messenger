@@ -151,6 +151,7 @@ const socket = io("https://simple-messenger-xh9u.onrender.com");
 
 let myNickname = "";
 let currentRoom = "";
+let chats = {};   // хранилище сообщений
 
 function register(){
   const nick = document.getElementById("nickname").value.trim();
@@ -241,3 +242,4 @@ document.getElementById("messageInput")
 
 </body>
 </html>
+
