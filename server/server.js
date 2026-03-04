@@ -49,15 +49,15 @@ io.on("connection", (socket) => {
       users: [socket.nickname, targetNick]
     });
   });
-
-  socket.on("send_message", ({ room, message, time }) => {
-io.to(room).emit("receive_message", {
-  room,
-  author: socket.nickname,
-  message,
-  time
-});
+  
+socket.on("send_message", ({ room, message, time }) => {
+  io.to(room).emit("receive_message", {
+    room,
+    author: socket.nickname,
+    message,
+    time
   });
+});
 
   socket.on("disconnect", () => {
     if (socket.nickname) {
@@ -71,4 +71,5 @@ io.to(room).emit("receive_message", {
 server.listen(3001, () => {
   console.log("Server running");
 });
+
 
