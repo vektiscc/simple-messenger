@@ -4,62 +4,236 @@
 <meta charset="UTF-8" />
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <title>Messenger</title>
+
 <style>
-body { margin:0; font-family:sans-serif; background:#1e1f22; color:white; display:flex; height:100vh;}
-#sidebar { width:250px; background:#2b2d31; padding:10px; overflow-y:auto;}
-#chat { flex:1; display:flex; flex-direction:column;}
-.dialog { padding:10px; cursor:pointer; border-radius:8px;}
-.dialog:hover { background:#3a3c41;}
-.online { color:#3ba55d;}
-.offline { color:gray;}
-#chatHeader { padding:10px; background:#2b2d31; display:flex; justify-content:space-between; align-items:center;}
-#messages { flex:1; padding:10px; overflow-y:auto;}
-.message { margin:5px 0; padding:8px 12px; border-radius:12px; max-width:60%; position:relative;}
-.mine { background:#3ba55d; margin-left:auto;}
-.their { background:#3a3c41;}
-.time { font-size:10px; opacity:0.7; margin-left:5px;}
-.deleteBtn { font-size:10px; cursor:pointer; margin-left:5px; opacity:0.6;}
-#inputArea { display:flex; padding:10px; background:#2b2d31;}
-#input { flex:1; padding:8px;}
-button { margin-left:5px;}
+body {
+  margin:0;
+  font-family:sans-serif;
+  background:#0f1419;
+  color:white;
+}
+
+/* LOGIN SCREEN */
+
+#loginScreen {
+  position:fixed;
+  inset:0;
+  background:#0f1419;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.loginBox {
+  background:#1a222b;
+  padding:40px;
+  border-radius:16px;
+  width:300px;
+  text-align:center;
+  box-shadow:0 0 20px rgba(0,255,150,0.2);
+}
+
+.loginBox input {
+  width:100%;
+  padding:10px;
+  margin-top:15px;
+  background:#0f1419;
+  border:1px solid #00c896;
+  border-radius:8px;
+  color:white;
+}
+
+.loginBox button {
+  width:100%;
+  margin-top:15px;
+  padding:10px;
+  background:#00c896;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.loginBox button:hover {
+  background:#00e6ac;
+}
+
+/* MAIN LAYOUT */
+
+#app {
+  display:flex;
+  height:100vh;
+}
+
+#sidebar {
+  width:260px;
+  background:#162028;
+  padding:10px;
+  overflow-y:auto;
+  border-right:1px solid #00c89633;
+}
+
+.dialog {
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+  margin-bottom:5px;
+}
+
+.dialog:hover {
+  background:#00c89622;
+}
+
+.online { color:#00e676; }
+.offline { color:gray; }
+
+#chat {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+#chatHeader {
+  padding:15px;
+  background:#162028;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid #00c89633;
+}
+
+#chatHeader button {
+  background:#ff4d4d;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  color:white;
+}
+
+#messages {
+  flex:1;
+  padding:15px;
+  overflow-y:auto;
+}
+
+.message {
+  margin:8px 0;
+  padding:10px 14px;
+  border-radius:14px;
+  max-width:60%;
+  position:relative;
+}
+
+.mine {
+  background:#00c896;
+  margin-left:auto;
+  color:black;
+}
+
+.their {
+  background:#1f2c36;
+}
+
+.time {
+  font-size:10px;
+  opacity:0.7;
+  margin-left:6px;
+}
+
+.deleteBtn {
+  font-size:12px;
+  margin-left:6px;
+  cursor:pointer;
+  opacity:0.6;
+}
+
+#inputArea {
+  display:flex;
+  padding:15px;
+  background:#162028;
+  border-top:1px solid #00c89633;
+}
+
+#input {
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #00c896;
+  background:#0f1419;
+  color:white;
+}
+
+#inputArea button {
+  margin-left:10px;
+  padding:10px 15px;
+  background:#00c896;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+#inputArea button:hover {
+  background:#00e6ac;
+}
 </style>
 </head>
 <body>
 
-<div id="sidebar"></div>
-
-<div id="chat">
-  <div id="chatHeader">
-    <span id="chatTitle">Выберите диалог</span>
-    <button onclick="deleteCurrentChat()">Удалить чат</button>
+<div id="loginScreen">
+  <div class="loginBox">
+    <h2>Вход</h2>
+    <input id="nicknameInput" placeholder="Введите никнейм" />
+    <button onclick="login()">Войти</button>
   </div>
-  <div id="messages"></div>
-  <div id="inputArea">
-    <input id="input" placeholder="Сообщение..."/>
-    <button onclick="sendMessage()">➤</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div id="sidebar"></div>
+
+  <div id="chat">
+    <div id="chatHeader">
+      <span id="chatTitle">Выберите диалог</span>
+      <button onclick="deleteCurrentChat()">Удалить чат</button>
+    </div>
+    <div id="messages"></div>
+    <div id="inputArea">
+      <input id="input" placeholder="Сообщение..." />
+      <button onclick="sendMessage()">➤</button>
+    </div>
   </div>
 </div>
 
 <script>
 const socket = io("https://твой-render-url"); // ← ВСТАВЬ СВОЙ URL
 
-let userId = localStorage.getItem("userId");
-if (!userId) {
-  userId = crypto.randomUUID();
-  localStorage.setItem("userId", userId);
-}
+let userId = localStorage.getItem("userId") || crypto.randomUUID();
+localStorage.setItem("userId", userId);
 
 let nickname = localStorage.getItem("nickname");
-if (!nickname) {
-  nickname = prompt("Введите ник:");
-  localStorage.setItem("nickname", nickname);
-}
-
-socket.emit("join", { userId, nickname });
-
 let users = {};
 let dialogs = JSON.parse(localStorage.getItem("dialogs") || "{}");
 let currentRoom = null;
+
+if (nickname) {
+  startApp();
+}
+
+function login() {
+  const input = document.getElementById("nicknameInput").value.trim();
+  if (!input) return;
+  nickname = input;
+  localStorage.setItem("nickname", nickname);
+  startApp();
+}
+
+function startApp() {
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("app").style.display="flex";
+
+  socket.emit("join", { userId, nickname });
+}
 
 socket.on("nickname_taken", ()=>{
   alert("Ник уже используется онлайн!");
@@ -74,7 +248,7 @@ socket.on("users_update", (serverUsers)=>{
 
 function renderDialogs(){
   const sidebar = document.getElementById("sidebar");
-  sidebar.innerHTML = "";
+  sidebar.innerHTML="";
 
   Object.keys(dialogs).forEach(otherId=>{
     const div = document.createElement("div");
@@ -84,100 +258,91 @@ function renderDialogs(){
     const name = dialogs[otherId].nickname;
 
     div.innerHTML = `${name} <span class="${isOnline?'online':'offline'}">●</span>`;
-    div.onclick = ()=>openDialog(otherId);
+    div.onclick=()=>openDialog(otherId);
     sidebar.appendChild(div);
   });
 }
 
 function openDialog(otherId){
-  const room = [userId, otherId].sort().join("_");
-  currentRoom = room;
-
-  socket.emit("start_dialog", { from:userId, to:otherId });
-
+  currentRoom = [userId, otherId].sort().join("_");
+  socket.emit("start_dialog",{from:userId,to:otherId});
   document.getElementById("chatTitle").innerText = dialogs[otherId].nickname;
   renderMessages();
 }
 
 function renderMessages(){
-  const messagesDiv = document.getElementById("messages");
-  messagesDiv.innerHTML="";
-
-  if (!currentRoom) return;
+  const div=document.getElementById("messages");
+  div.innerHTML="";
+  if(!currentRoom) return;
   const msgs = dialogs[getOtherId()]?.messages || [];
 
   msgs.forEach(msg=>{
     if(msg.deleted) return;
-
-    const div = document.createElement("div");
-    div.className = "message " + (msg.authorId===userId?"mine":"their");
-    div.innerHTML = `
+    const m=document.createElement("div");
+    m.className="message "+(msg.authorId===userId?"mine":"their");
+    m.innerHTML=`
       ${msg.text}
       <span class="time">${msg.time}</span>
       <span class="deleteBtn" onclick="deleteMessage('${msg.messageId}')">🗑</span>
     `;
-    messagesDiv.appendChild(div);
+    div.appendChild(m);
   });
 
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  div.scrollTop=div.scrollHeight;
 }
 
 function sendMessage(){
-  const input = document.getElementById("input");
-  if(!input.value || !currentRoom) return;
+  const input=document.getElementById("input");
+  if(!input.value||!currentRoom) return;
 
-  const messageId = crypto.randomUUID();
-  const time = new Date().toLocaleTimeString();
-
-  socket.emit("send_message", {
-    room: currentRoom,
-    messageId,
-    text: input.value,
-    time
+  socket.emit("send_message",{
+    room:currentRoom,
+    messageId:crypto.randomUUID(),
+    text:input.value,
+    time:new Date().toLocaleTimeString()
   });
 
   input.value="";
 }
 
-socket.on("receive_message", (data)=>{
+socket.on("receive_message",(data)=>{
   const otherId = data.authorId===userId ? getOtherId() : data.authorId;
 
   if(!dialogs[otherId]){
-    dialogs[otherId] = { nickname:data.authorName, messages:[] };
+    dialogs[otherId]={nickname:data.authorName,messages:[]};
   }
 
   dialogs[otherId].messages.push(data);
-  localStorage.setItem("dialogs", JSON.stringify(dialogs));
+  localStorage.setItem("dialogs",JSON.stringify(dialogs));
 
   if(data.room===currentRoom) renderMessages();
   renderDialogs();
 });
 
-function deleteMessage(messageId){
+function deleteMessage(id){
   if(!confirm("Удалить сообщение у обоих?")) return;
-
-  socket.emit("delete_message",{ room:currentRoom, messageId });
+  socket.emit("delete_message",{room:currentRoom,messageId:id});
 }
 
-socket.on("message_deleted", ({ room, messageId })=>{
-  const otherId = getOtherId();
+socket.on("message_deleted",({room,messageId})=>{
+  const otherId=getOtherId();
   dialogs[otherId].messages = dialogs[otherId].messages.map(m=>{
     if(m.messageId===messageId) m.deleted=true;
     return m;
   });
-  localStorage.setItem("dialogs", JSON.stringify(dialogs));
+  localStorage.setItem("dialogs",JSON.stringify(dialogs));
   if(room===currentRoom) renderMessages();
 });
 
 function deleteCurrentChat(){
   if(!confirm("Удалить чат полностью?")) return;
-  socket.emit("delete_chat",{ room:currentRoom });
+  socket.emit("delete_chat",{room:currentRoom});
 }
 
-socket.on("chat_deleted", ({ room })=>{
-  const otherId = getOtherId();
+socket.on("chat_deleted",({room})=>{
+  const otherId=getOtherId();
   delete dialogs[otherId];
-  localStorage.setItem("dialogs", JSON.stringify(dialogs));
+  localStorage.setItem("dialogs",JSON.stringify(dialogs));
   currentRoom=null;
   document.getElementById("chatTitle").innerText="Выберите диалог";
   renderDialogs();
@@ -185,7 +350,7 @@ socket.on("chat_deleted", ({ room })=>{
 });
 
 function getOtherId(){
-  return currentRoom.split("_").find(id=>id!==userId);
+  return currentRoom?.split("_").find(id=>id!==userId);
 }
 </script>
 
