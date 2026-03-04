@@ -13,29 +13,28 @@ const io = new Server(server, {
 
 let users = {};
 
+function broadcastUsers() {
+  io.emit("online_users", Object.keys(users));
+}
+
 io.on("connection", (socket) => {
 
-socket.on("register", (nickname) => {
-  if (users[nickname]) {
-    socket.emit("nickname_taken");
-    return;
-  }
+  socket.on("register", (nickname) => {
+    if (users[nickname]) {
+      socket.emit("nickname_taken");
+      return;
+    }
 
-  users[nickname] = { socketId: socket.id };
-  socket.nickname = nickname;
+    users[nickname] = { socketId: socket.id };
+    socket.nickname = nickname;
 
-  socket.emit("register_success");
-  broadcastUsers();
-});
-
-  users[nickname] = socket.id;
-  socket.nickname = nickname;
-  socket.emit("register_success");
-});
+    socket.emit("register_success");
+    broadcastUsers();
+  });
 
   socket.on("start_chat", (targetNick) => {
-    const targetId = users[targetNick];
-    if (!targetId) {
+    const target = users[targetNick];
+    if (!target) {
       socket.emit("user_not_found");
       return;
     }
@@ -43,32 +42,31 @@ socket.on("register", (nickname) => {
     const roomId = [socket.nickname, targetNick].sort().join("_");
 
     socket.join(roomId);
-    io.sockets.sockets.get(targetId)?.join(roomId);
+    io.sockets.sockets.get(target.socketId)?.join(roomId);
 
-    io.to(roomId).emit("chat_started", roomId);
-  });
-
-  socket.on("send_message", ({ room, message }) => {
-    io.to(room).emit("receive_message", {
-      author: socket.nickname,
-      message
+    io.to(roomId).emit("chat_started", {
+      room: roomId,
+      users: [socket.nickname, targetNick]
     });
   });
 
-socket.on("disconnect", () => {
-  if (socket.nickname) {
-    delete users[socket.nickname];
-    broadcastUsers();
-  }
-});
+  socket.on("send_message", ({ room, message, time }) => {
+    io.to(room).emit("receive_message", {
+      author: socket.nickname,
+      message,
+      time
+    });
+  });
+
+  socket.on("disconnect", () => {
+    if (socket.nickname) {
+      delete users[socket.nickname];
+      broadcastUsers();
+    }
+  });
 
 });
 
 server.listen(3001, () => {
   console.log("Server running");
-
-  function broadcastUsers() {
-  io.emit("online_users", Object.keys(users));
-}
 });
-
