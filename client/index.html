@@ -213,6 +213,24 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   margin-bottom:10px;
 }
 
+  #deleteBtn {
+  background:#ff4d4d;
+  border:none;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:18px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  transition:0.15s;
+}
+
+#deleteBtn:hover {
+  background:#ff6666;
+}
+  
 #userList {
   flex:1;
   overflow-y:auto;
@@ -248,24 +266,16 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   <div id="chat">
 <div id="chatHeader">
   <span id="chatTitle">Выберите диалог</span>
-  <button onclick="deleteChat()" style="
-    background:none;
-    border:none;
-    color:#ff4d4d;
-    cursor:pointer;
-    font-size:14px;
-  ">
-    🗑
-  </button>
+<button onclick="deleteChat()" id="deleteBtn">
+  🗑
+</button>
 </div>
     <div id="messages"></div>
     <div id="inputArea">
       <textarea id="input" placeholder="Сообщение..."></textarea>
-      <button id="sendBtn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24">
-          <path d="M2 21L23 12 2 3v7l15 2-15 2z"/>
-        </svg>
-      </button>
+<button id="sendBtn">
+  <span class="triangle"></span>
+</button>
     </div>
   </div>
 </div>
@@ -549,6 +559,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
