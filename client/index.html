@@ -246,31 +246,56 @@ const socket = io("https://simple-messenger-xh9u.onrender.com");
 let myUserId = localStorage.getItem("userId");
 let myNickname = localStorage.getItem("nickname");
 
-if (!myUserId || !myNickname) {
-  myNickname = prompt("Введите никнейм:");
-  myUserId = crypto.randomUUID();
-  localStorage.setItem("userId", myUserId);
-  localStorage.setItem("nickname", myNickname);
-}
-
-socket.emit("join", { userId: myUserId, nickname: myNickname });
-
 let users = {};
 let dialogs = JSON.parse(localStorage.getItem("dialogs") || "{}");
 let currentChat = null;
 
+/* ELEMENTS */
+const loginScreen = document.getElementById("loginScreen");
+const app = document.getElementById("app");
+const nicknameInput = document.getElementById("nicknameInput");
 const dialogsList = document.getElementById("dialogs");
 const messagesContainer = document.getElementById("messages");
-const input = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const newChatBtn = document.getElementById("newChatBtn");
+const input = document.getElementById("input");
+const chatTitle = document.getElementById("chatTitle");
+const modal = document.getElementById("modal");
+const searchUser = document.getElementById("searchUser");
+const userList = document.getElementById("userList");
 
+/* LOGIN */
+function login() {
+  const nickname = nicknameInput.value.trim();
+  if (!nickname) return;
+
+  myUserId = crypto.randomUUID();
+  myNickname = nickname;
+
+  localStorage.setItem("userId", myUserId);
+  localStorage.setItem("nickname", myNickname);
+
+  socket.emit("join", { userId: myUserId, nickname: myNickname });
+
+  loginScreen.style.display = "none";
+  app.style.display = "flex";
+
+  renderDialogs();
+}
+
+if (myUserId && myNickname) {
+  socket.emit("join", { userId: myUserId, nickname: myNickname });
+  loginScreen.style.display = "none";
+  app.style.display = "flex";
+  renderDialogs();
+}
+
+/* DIALOGS */
 function saveDialogs() {
   localStorage.setItem("dialogs", JSON.stringify(dialogs));
 }
 
 function renderDialogs() {
   dialogsList.innerHTML = "";
+
   Object.keys(dialogs).forEach((userId) => {
     const div = document.createElement("div");
     div.className = "dialog";
@@ -282,6 +307,7 @@ function renderDialogs() {
 
 function openChat(userId) {
   currentChat = userId;
+  chatTitle.innerText = dialogs[userId].nickname;
   renderMessages();
 }
 
@@ -291,75 +317,30 @@ function renderMessages() {
 
   dialogs[currentChat].messages.forEach((msg) => {
     const div = document.createElement("div");
-    div.className = msg.fromMe ? "my-message" : "their-message";
-    div.innerText = `${msg.message} (${msg.time})`;
+    div.className = "message " + (msg.fromMe ? "mine" : "their");
+    div.innerText = msg.message + "  " + msg.time;
     messagesContainer.appendChild(div);
   });
+
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function createDialog(userId, nickname) {
   if (!dialogs[userId]) {
-    dialogs[userId] = {
-      nickname,
-      messages: []
-    };
+    dialogs[userId] = { nickname, messages: [] };
     saveDialogs();
     renderDialogs();
   }
 }
 
-newChatBtn.onclick = () => {
-  const onlineUsers = Object.entries(users)
-    .filter(([id]) => id !== myUserId)
-    .sort((a, b) =>
-      a[1].nickname.localeCompare(b[1].nickname)
-    );
-
-  if (onlineUsers.length === 0) {
-    alert("Нет пользователей онлайн");
-    return;
-  }
-
-  const nickname = prompt(
-    "Введите никнейм:\n" +
-    onlineUsers.map(u => u[1].nickname).join("\n")
-  );
-
-  const selected = onlineUsers.find(
-    u => u[1].nickname.toLowerCase() === nickname?.toLowerCase()
-  );
-
-  if (!selected) return;
-
-  const [userId, data] = selected;
-
-  createDialog(userId, data.nickname);
-
-  socket.emit("create_dialog", {
-    fromUserId: myUserId,
-    toUserId: userId,
-    fromNickname: myNickname
-  });
-
-  openChat(userId);
-};
-
-sendBtn.onclick = sendMessage;
-
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
+/* SEND MESSAGE */
 function sendMessage() {
   if (!currentChat) return;
 
   const message = input.value.trim();
   if (!message) return;
 
-  const time = new Date().toLocaleTimeString();
+  const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
   dialogs[currentChat].messages.push({
     fromMe: true,
@@ -380,6 +361,14 @@ function sendMessage() {
   input.value = "";
 }
 
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+/* SOCKET EVENTS */
 socket.on("receive_message", ({ fromUserId, message, time }) => {
   if (!dialogs[fromUserId]) {
     createDialog(fromUserId, users[fromUserId]?.nickname || "Unknown");
@@ -401,12 +390,54 @@ socket.on("dialog_created", ({ userId, nickname }) => {
 
 socket.on("users_update", (serverUsers) => {
   users = serverUsers;
+  renderUserList();
 });
 
-renderDialogs();
+/* MODAL */
+function openModal() {
+  modal.style.display = "flex";
+  renderUserList();
+}
+
+function closeModal() {
+  modal.style.display = "none";
+}
+
+function renderUserList() {
+  if (!userList) return;
+
+  const query = searchUser.value.toLowerCase();
+  userList.innerHTML = "";
+
+  Object.entries(users)
+    .filter(([id]) => id !== myUserId)
+    .filter(([id, u]) =>
+      u.nickname.toLowerCase().includes(query)
+    )
+    .sort((a, b) =>
+      a[1].nickname.localeCompare(b[1].nickname)
+    )
+    .forEach(([id, u]) => {
+      const div = document.createElement("div");
+      div.className = "userItem";
+      div.innerText = u.nickname;
+      div.onclick = () => {
+        createDialog(id, u.nickname);
+        socket.emit("create_dialog", {
+          fromUserId: myUserId,
+          toUserId: id,
+          fromNickname: myNickname
+        });
+        openChat(id);
+        closeModal();
+      };
+      userList.appendChild(div);
+    });
+}
 </script>
 
 </body>
 </html>
+
 
 
