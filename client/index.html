@@ -141,11 +141,12 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 
 #inputArea {
   display:flex;
-  padding:15px;
+  align-items:center;
+  padding:12px 15px;
   background:#162028;
   border-top:1px solid #00c89633;
 }
-
+  
 #input {
   flex:1;
   padding:10px;
@@ -308,6 +309,9 @@ const chatTitle = document.getElementById("chatTitle");
 const modal = document.getElementById("modal");
 const searchUser = document.getElementById("searchUser");
 const userList = document.getElementById("userList");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("sendBtn");
+sendBtn.addEventListener("click", sendMessage);
 
 /* LOGIN */
 function login() {
@@ -559,6 +563,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
