@@ -356,7 +356,11 @@ function sendMessage() {
   const message = input.value.trim();
   if (!message) return;
 
-  const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+const now = new Date();
+const time =
+  now.getHours().toString().padStart(2, "0") +
+  ":" +
+  now.getMinutes().toString().padStart(2, "0");
 
   dialogs[currentChat].messages.push({
     fromMe: true,
@@ -454,6 +458,7 @@ function renderUserList() {
 
 </body>
 </html>
+
 
 
 
