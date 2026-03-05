@@ -475,10 +475,10 @@ function renderUserList() {
     });
 }
 
-  function deleteChat() {
+window.deleteChat = function () {
   if (!currentChat) return;
 
-  if (!confirm("Удалить чат? Сообщения исчезнут у тебя.")) return;
+  if (!confirm("Удалить чат?")) return;
 
   delete dialogs[currentChat];
   saveDialogs();
@@ -488,12 +488,13 @@ function renderUserList() {
   messagesContainer.innerHTML = "";
 
   renderDialogs();
-}
+};
   
 </script>
 
 </body>
 </html>
+
 
 
 
