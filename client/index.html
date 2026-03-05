@@ -276,6 +276,26 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 .userItem:hover {
   background:#00c89622;
 }
+
+  .checks {
+  font-size:12px;
+  margin-left:4px;
+  position:relative;
+  display:inline-block;
+}
+
+.checks span {
+  position:absolute;
+}
+
+.checks .c1 {
+  left:0;
+}
+
+.checks .c2 {
+  left:4px;
+}
+  
 </style>
 </head>
 <body>
@@ -390,6 +410,7 @@ function saveDialogs() {
 }
 
 function renderDialogs() {
+
   dialogsList.innerHTML = "";
 
   Object.keys(dialogs).forEach((userId) => {
@@ -399,9 +420,7 @@ function renderDialogs() {
     const div = document.createElement("div");
     div.className = "dialog";
 
-    if (currentChat === userId) {
-      div.classList.add("active");
-    }
+    if (currentChat === userId) div.classList.add("active");
 
     const left = document.createElement("div");
     left.className = "dialogLeft";
@@ -409,11 +428,8 @@ function renderDialogs() {
     const status = document.createElement("div");
     status.className = "statusDot";
 
-    if (users[userId]) {
-      status.classList.add("statusOnline");
-    } else {
-      status.classList.add("statusOffline");
-    }
+    if (users[userId]) status.classList.add("statusOnline");
+    else status.classList.add("statusOffline");
 
     const name = document.createElement("span");
     name.textContent = dialog.nickname;
@@ -423,19 +439,37 @@ function renderDialogs() {
 
     div.appendChild(left);
 
+    const right = document.createElement("div");
+    right.style.display = "flex";
+    right.style.alignItems = "center";
+    right.style.gap = "8px";
+
+    const lastMsg = dialog.messages[dialog.messages.length - 1];
+
+    if (lastMsg) {
+      const time = document.createElement("span");
+      time.style.fontSize = "12px";
+      time.style.opacity = "0.7";
+      time.textContent = lastMsg.time;
+      right.appendChild(time);
+    }
+
     if (dialog.unread > 0) {
       const unread = document.createElement("div");
       unread.className = "unread";
       unread.textContent = dialog.unread;
-      div.appendChild(unread);
+      right.appendChild(unread);
     }
+
+    div.appendChild(right);
 
     div.onclick = () => openChat(userId);
 
     dialogsList.appendChild(div);
   });
-}
 
+}
+  
 function openChat(userId) {
   currentChat = userId;
   dialogs[userId].unread = 0;
@@ -446,29 +480,58 @@ function openChat(userId) {
 }
 
 function renderMessages() {
+
   messagesContainer.innerHTML = "";
+
   if (!dialogs[currentChat]) return;
 
   dialogs[currentChat].messages.forEach((msg) => {
-    const div = document.createElement("div");
-    div.className = "message " + (msg.fromMe ? "mine" : "their");
 
-    div.innerHTML = `
-      <div>${msg.message}</div>
-      <div style="
-        font-size:11px;
-        opacity:0.6;
-        margin-top:4px;
-        text-align:right;
-      ">
-        ${msg.time}
-      </div>
-    `;
+    const div = document.createElement("div");
+    div.className = "message";
+
+    if (msg.fromMe) div.classList.add("mine");
+    else div.classList.add("their");
+
+    const text = document.createElement("div");
+    text.textContent = msg.message;
+
+    const meta = document.createElement("div");
+    meta.style.fontSize = "11px";
+    meta.style.opacity = "0.7";
+    meta.style.marginTop = "4px";
+    meta.style.display = "flex";
+    meta.style.alignItems = "center";
+    meta.style.justifyContent = "flex-end";
+
+    meta.textContent = msg.time;
+
+    if (msg.fromMe) {
+
+      const checks = document.createElement("span");
+      checks.className = "checks";
+
+      if (msg.status === "sent") {
+        checks.innerHTML = `<span class="c1">✓</span>`;
+      }
+
+      if (msg.status === "read") {
+        checks.innerHTML = `<span class="c1">✓</span><span class="c2">✓</span>`;
+      }
+
+      meta.appendChild(checks);
+
+    }
+
+    div.appendChild(text);
+    div.appendChild(meta);
 
     messagesContainer.appendChild(div);
+
   });
 
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
 }
 
 function createDialog(userId, nickname) {
@@ -495,12 +558,13 @@ const time =
   now.getHours().toString().padStart(2, "0") +
   ":" +
   now.getMinutes().toString().padStart(2, "0");
-
-  dialogs[currentChat].messages.push({
-    fromMe: true,
-    message,
-    time
-  });
+  
+dialogs[currentChat].messages.push({
+  fromMe: true,
+  message,
+  time,
+  status: "sent"
+});
 
   saveDialogs();
   renderMessages();
@@ -527,11 +591,12 @@ socket.on("receive_message", ({ fromUserId, message, time }) => {
     createDialog(fromUserId, users[fromUserId]?.nickname || "Unknown");
   }
 
-  dialogs[fromUserId].messages.push({
-    fromMe: false,
-    message,
-    time
-  });
+dialogs[fromUserId].messages.push({
+  fromMe: false,
+  message,
+  time,
+  status: "read"
+});
 
   if (currentChat !== fromUserId) {
     dialogs[fromUserId].unread =
@@ -649,6 +714,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
