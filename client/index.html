@@ -256,7 +256,7 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   <div class="loginBox">
     <h2>Вход</h2>
     <input id="nicknameInput" placeholder="Введите никнейм"/>
-    <button onclick="login()">Войти</button>
+  <button id="loginBtn">Войти</button>
   </div>
 </div>
 
@@ -314,9 +314,15 @@ const userList = document.getElementById("userList");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
 sendBtn.addEventListener("click", sendMessage);
+const nicknameInput = document.getElementById("nickname");
+const loginScreen = document.getElementById("loginScreen");
+const app = document.getElementById("app");
+  const loginBtn = document.getElementById("loginBtn");
 
+loginBtn.addEventListener("click", login);
+  
 /* LOGIN */
-window.login = function () {
+function login() {
   const nickname = nicknameInput.value.trim();
   if (!nickname) return;
 
@@ -332,7 +338,7 @@ window.login = function () {
   app.style.display = "flex";
 
   renderDialogs();
-};
+}
 
 if (myUserId && myNickname) {
   socket.emit("join", { userId: myUserId, nickname: myNickname });
@@ -565,6 +571,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
