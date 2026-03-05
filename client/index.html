@@ -511,11 +511,32 @@ window.deleteChat = function () {
 
   renderDialogs();
 };
+
+  let typingTimeout = null;
+
+input.addEventListener("input", () => {
+  if (!currentChat) return;
+
+  socket.emit("typing", { toUserId: currentChat });
+});
+
+  socket.on("typing", () => {
+  if (!currentChat) return;
+
+  chatTitle.innerText =
+    dialogs[currentChat].nickname + " печатает...";
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    chatTitle.innerText = dialogs[currentChat].nickname;
+  }, 1200);
+});
   
 </script>
 
 </body>
 </html>
+
 
 
 
