@@ -68,26 +68,54 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 }
 
 #dialogs { flex:1; overflow-y:auto; }
-
 .dialog {
-  padding:12px;
-  border-radius:12px;
+  padding:12px 14px;
+  border-radius:14px;
   cursor:pointer;
-  margin-bottom:6px;
+  margin-bottom:8px;
   background:#132028;
   display:flex;
-  justify-content:space-between;
   align-items:center;
+  justify-content:space-between;
   transition:0.15s;
+  border:1px solid transparent;
 }
 
-.dialog:hover { background:#00c89622; }
+.dialog:hover {
+  background:#1b2a34;
+  border:1px solid #00c89655;
+}
+
+.dialog.active {
+  background:#00c89622;
+  border:1px solid #00c896;
+}
 
 .unread {
   background:#ff3b3b;
   border-radius:12px;
   padding:2px 8px;
   font-size:12px;
+}
+
+  .dialogLeft {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.statusDot {
+  width:10px;
+  height:10px;
+  border-radius:50%;
+}
+
+.statusOnline {
+  background:#00c896;
+}
+
+.statusOffline {
+  background:#6b7c8a;
 }
 
 /* CHAT */
@@ -285,8 +313,21 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 
 <div id="modal">
   <div class="modalBox">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <b>Новый чат</b>
+      <button onclick="closeModal()" style="
+        background:none;
+        border:none;
+        color:#00c896;
+        font-size:20px;
+        cursor:pointer;
+      ">✕</button>
+    </div>
+
     <input id="searchUser" placeholder="Поиск..." oninput="renderUserList()"/>
     <div id="userList"></div>
+
   </div>
 </div>
 
@@ -352,20 +393,44 @@ function renderDialogs() {
   dialogsList.innerHTML = "";
 
   Object.keys(dialogs).forEach((userId) => {
+
     const dialog = dialogs[userId];
 
     const div = document.createElement("div");
     div.className = "dialog";
-    div.onclick = () => openChat(userId);
 
-    div.innerHTML = `
-      <span>${dialog.nickname}</span>
-      ${
-        dialog.unread > 0
-          ? `<span class="unread">${dialog.unread}</span>`
-          : ""
-      }
-    `;
+    if (currentChat === userId) {
+      div.classList.add("active");
+    }
+
+    const left = document.createElement("div");
+    left.className = "dialogLeft";
+
+    const status = document.createElement("div");
+    status.className = "statusDot";
+
+    if (users[userId]) {
+      status.classList.add("statusOnline");
+    } else {
+      status.classList.add("statusOffline");
+    }
+
+    const name = document.createElement("span");
+    name.textContent = dialog.nickname;
+
+    left.appendChild(status);
+    left.appendChild(name);
+
+    div.appendChild(left);
+
+    if (dialog.unread > 0) {
+      const unread = document.createElement("div");
+      unread.className = "unread";
+      unread.textContent = dialog.unread;
+      div.appendChild(unread);
+    }
+
+    div.onclick = () => openChat(userId);
 
     dialogsList.appendChild(div);
   });
@@ -484,7 +549,7 @@ socket.on("dialog_created", ({ userId, nickname }) => {
 
 socket.on("users_update", (serverUsers) => {
   users = serverUsers;
-  renderUserList();
+  renderDialogs();
 });
 
 /* MODAL */
@@ -563,11 +628,28 @@ input.addEventListener("input", () => {
     chatTitle.innerText = dialogs[currentChat].nickname;
   }, 1200);
 });
+
+  function closeModal(){
+  modal.style.display = "none";
+}
+  
+  modal.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    closeModal();
+  }
+});
+
+  document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeModal();
+  }
+});
   
 </script>
 
 </body>
 </html>
+
 
 
 
