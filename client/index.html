@@ -222,9 +222,18 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   </div>
 
   <div id="chat">
-    <div id="chatHeader">
-      <span id="chatTitle">Выберите диалог</span>
-    </div>
+<div id="chatHeader">
+  <span id="chatTitle">Выберите диалог</span>
+  <button onclick="deleteChat()" style="
+    background:none;
+    border:none;
+    color:#ff4d4d;
+    cursor:pointer;
+    font-size:14px;
+  ">
+    🗑
+  </button>
+</div>
     <div id="messages"></div>
     <div id="inputArea">
       <textarea id="input" placeholder="Сообщение..."></textarea>
@@ -458,6 +467,7 @@ function renderUserList() {
 
 </body>
 </html>
+
 
 
 
