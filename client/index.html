@@ -311,16 +311,13 @@ const chatTitle = document.getElementById("chatTitle");
 const modal = document.getElementById("modal");
 const searchUser = document.getElementById("searchUser");
 const userList = document.getElementById("userList");
-const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
-sendBtn.addEventListener("click", sendMessage);
-const nicknameInput = document.getElementById("nickname");
-const loginScreen = document.getElementById("loginScreen");
-const app = document.getElementById("app");
-  const loginBtn = document.getElementById("loginBtn");
+const loginBtn = document.getElementById("loginBtn");
 
+sendBtn.addEventListener("click", sendMessage);
 loginBtn.addEventListener("click", login);
-  
+
+
 /* LOGIN */
 function login() {
   const nickname = nicknameInput.value.trim();
@@ -339,7 +336,7 @@ function login() {
 
   renderDialogs();
 }
-
+  
 if (myUserId && myNickname) {
   socket.emit("join", { userId: myUserId, nickname: myNickname });
   loginScreen.style.display = "none";
@@ -571,6 +568,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
