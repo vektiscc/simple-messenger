@@ -322,7 +322,19 @@ function renderMessages() {
   dialogs[currentChat].messages.forEach((msg) => {
     const div = document.createElement("div");
     div.className = "message " + (msg.fromMe ? "mine" : "their");
-    div.innerText = msg.message + "  " + msg.time;
+
+    div.innerHTML = `
+      <div>${msg.message}</div>
+      <div style="
+        font-size:11px;
+        opacity:0.6;
+        margin-top:4px;
+        text-align:right;
+      ">
+        ${msg.time}
+      </div>
+    `;
+
     messagesContainer.appendChild(div);
   });
 
@@ -442,6 +454,7 @@ function renderUserList() {
 
 </body>
 </html>
+
 
 
 
