@@ -463,10 +463,27 @@ function renderUserList() {
       userList.appendChild(div);
     });
 }
+
+  function deleteChat() {
+  if (!currentChat) return;
+
+  if (!confirm("Удалить чат? Сообщения исчезнут у тебя.")) return;
+
+  delete dialogs[currentChat];
+  saveDialogs();
+
+  currentChat = null;
+  chatTitle.innerText = "Выберите диалог";
+  messagesContainer.innerHTML = "";
+
+  renderDialogs();
+}
+  
 </script>
 
 </body>
 </html>
+
 
 
 
