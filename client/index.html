@@ -159,15 +159,28 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 
 #sendBtn {
   margin-left:10px;
-  background:none;
+  background:#00c896;
   border:none;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
   cursor:pointer;
+  transition:0.15s;
 }
 
-#sendBtn svg {
-  width:26px;
-  height:26px;
-  fill:#00c896;
+#sendBtn:hover {
+  background:#00e6aa;
+}
+
+.triangle {
+  width:0;
+  height:0;
+  border-top:7px solid transparent;
+  border-bottom:7px solid transparent;
+  border-left:12px solid black;
 }
 
 /* MODAL */
@@ -536,6 +549,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
