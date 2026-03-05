@@ -312,7 +312,6 @@ if (myUserId && myNickname) {
   renderDialogs();
 }
 
-/* DIALOGS */
 function saveDialogs() {
   localStorage.setItem("dialogs", JSON.stringify(dialogs));
 }
@@ -321,17 +320,31 @@ function renderDialogs() {
   dialogsList.innerHTML = "";
 
   Object.keys(dialogs).forEach((userId) => {
+    const dialog = dialogs[userId];
+
     const div = document.createElement("div");
     div.className = "dialog";
-    div.innerText = dialogs[userId].nickname;
     div.onclick = () => openChat(userId);
+
+    div.innerHTML = `
+      <span>${dialog.nickname}</span>
+      ${
+        dialog.unread > 0
+          ? `<span class="unread">${dialog.unread}</span>`
+          : ""
+      }
+    `;
+
     dialogsList.appendChild(div);
   });
 }
 
 function openChat(userId) {
   currentChat = userId;
+  dialogs[userId].unread = 0;
+  saveDialogs();
   chatTitle.innerText = dialogs[userId].nickname;
+  renderDialogs();
   renderMessages();
 }
 
@@ -363,7 +376,11 @@ function renderMessages() {
 
 function createDialog(userId, nickname) {
   if (!dialogs[userId]) {
-    dialogs[userId] = { nickname, messages: [] };
+    dialogs[userId] = {
+      nickname,
+      messages: [],
+      unread: 0
+    };
     saveDialogs();
     renderDialogs();
   }
@@ -408,7 +425,6 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-/* SOCKET EVENTS */
 socket.on("receive_message", ({ fromUserId, message, time }) => {
   if (!dialogs[fromUserId]) {
     createDialog(fromUserId, users[fromUserId]?.nickname || "Unknown");
@@ -420,7 +436,13 @@ socket.on("receive_message", ({ fromUserId, message, time }) => {
     time
   });
 
+  if (currentChat !== fromUserId) {
+    dialogs[fromUserId].unread =
+      (dialogs[fromUserId].unread || 0) + 1;
+  }
+
   saveDialogs();
+  renderDialogs();
   renderMessages();
 });
 
@@ -494,6 +516,7 @@ window.deleteChat = function () {
 
 </body>
 </html>
+
 
 
 
