@@ -56,6 +56,15 @@ io.on("connection", (socket) => {
   });
 });
 
+socket.on("typing", ({ toUserId }) => {
+  if (users[toUserId]) {
+    io.to(users[toUserId].socketId).emit("typing", {
+      fromUserId: socket.id
+    });
+  }
+});
+
 server.listen(3001, () => {
   console.log("Server running on port 3001");
 });
+
