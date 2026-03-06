@@ -282,7 +282,6 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
   align-items:center;
   margin-right:4px;
   font-size:11px;
-  position:relative;
 }
 
 .checks span {
@@ -290,7 +289,7 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 }
 
 .checks .c2 {
-  margin-left:-3px;
+  margin-left:-4px;
 }
   
 </style>
@@ -493,15 +492,13 @@ function renderMessages() {
     const text = document.createElement("div");
     text.textContent = msg.message;
 
-    const meta = document.createElement("div");
-    meta.style.fontSize = "11px";
-    meta.style.opacity = "0.7";
-    meta.style.marginTop = "4px";
-    meta.style.display = "flex";
-    meta.style.alignItems = "center";
-    meta.style.justifyContent = "flex-end";
-
-    meta.textContent = msg.time;
+const meta = document.createElement("div");
+meta.style.fontSize = "11px";
+meta.style.opacity = "0.7";
+meta.style.marginTop = "4px";
+meta.style.display = "flex";
+meta.style.alignItems = "center";
+meta.style.justifyContent = "flex-end";
 
 if (msg.fromMe) {
 
@@ -509,19 +506,19 @@ if (msg.fromMe) {
   checks.className = "checks";
 
   if (msg.status === "sent") {
-    checks.innerHTML = `<span class="c1">✓</span>`;
+    checks.innerHTML = `<span>✓</span>`;
   }
 
   if (msg.status === "read") {
-    checks.innerHTML = `<span class="c1">✓</span><span class="c2">✓</span>`;
+    checks.innerHTML = `<span>✓</span><span class="c2">✓</span>`;
   }
 
   meta.appendChild(checks);
-
 }
 
 const time = document.createElement("span");
 time.textContent = msg.time;
+
 meta.appendChild(time);
 
     div.appendChild(text);
@@ -591,7 +588,7 @@ socket.on("receive_message", ({ fromUserId, message, time }) => {
   if (!dialogs[fromUserId]) {
     createDialog(fromUserId, users[fromUserId]?.nickname || "Unknown");
   }
-
+  
 dialogs[fromUserId].messages.push({
   fromMe: false,
   message,
@@ -715,6 +712,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
