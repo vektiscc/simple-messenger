@@ -276,24 +276,21 @@ body { margin:0; font-family:sans-serif; background:#0f1419; color:white; }
 .userItem:hover {
   background:#00c89622;
 }
-
-  .checks {
-  font-size:12px;
-  margin-left:4px;
+  
+.checks {
+  display:inline-flex;
+  align-items:center;
+  margin-right:4px;
+  font-size:11px;
   position:relative;
-  display:inline-block;
 }
 
 .checks span {
-  position:absolute;
-}
-
-.checks .c1 {
-  left:0;
+  position:relative;
 }
 
 .checks .c2 {
-  left:4px;
+  margin-left:-3px;
 }
   
 </style>
@@ -506,22 +503,26 @@ function renderMessages() {
 
     meta.textContent = msg.time;
 
-    if (msg.fromMe) {
+if (msg.fromMe) {
 
-      const checks = document.createElement("span");
-      checks.className = "checks";
+  const checks = document.createElement("span");
+  checks.className = "checks";
 
-      if (msg.status === "sent") {
-        checks.innerHTML = `<span class="c1">✓</span>`;
-      }
+  if (msg.status === "sent") {
+    checks.innerHTML = `<span class="c1">✓</span>`;
+  }
 
-      if (msg.status === "read") {
-        checks.innerHTML = `<span class="c1">✓</span><span class="c2">✓</span>`;
-      }
+  if (msg.status === "read") {
+    checks.innerHTML = `<span class="c1">✓</span><span class="c2">✓</span>`;
+  }
 
-      meta.appendChild(checks);
+  meta.appendChild(checks);
 
-    }
+}
+
+const time = document.createElement("span");
+time.textContent = msg.time;
+meta.appendChild(time);
 
     div.appendChild(text);
     div.appendChild(meta);
@@ -714,6 +715,7 @@ input.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
