@@ -473,8 +473,13 @@ function openChat(userId) {
   chatTitle.innerText = dialogs[userId].nickname;
   renderDialogs();
   renderMessages();
-}
 
+  socket.emit("messages_read", {
+    fromUserId: myUserId,
+    chatUserId: userId
+  });
+}
+  
 function renderMessages() {
 
   messagesContainer.innerHTML = "";
@@ -557,7 +562,10 @@ const time =
   ":" +
   now.getMinutes().toString().padStart(2, "0");
   
+const msgId = crypto.randomUUID();
+
 dialogs[currentChat].messages.push({
+  id: msgId,
   fromMe: true,
   message,
   time,
@@ -566,14 +574,15 @@ dialogs[currentChat].messages.push({
 
   saveDialogs();
   renderMessages();
-
-  socket.emit("send_message", {
-    fromUserId: myUserId,
-    toUserId: currentChat,
-    message,
-    time
-  });
-
+  
+socket.emit("send_message", {
+  id: msgId,
+  fromUserId: myUserId,
+  toUserId: currentChat,
+  message,
+  time
+});
+  
   input.value = "";
 }
 
@@ -584,17 +593,19 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-socket.on("receive_message", ({ fromUserId, message, time }) => {
+socket.on("receive_message", ({ id, fromUserId, message, time }) => {
+
   if (!dialogs[fromUserId]) {
     createDialog(fromUserId, users[fromUserId]?.nickname || "Unknown");
   }
-  
-dialogs[fromUserId].messages.push({
-  fromMe: false,
-  message,
-  time,
-  status: "read"
-});
+
+  dialogs[fromUserId].messages.push({
+    id,
+    fromMe: false,
+    message,
+    time,
+    status: "sent"
+  });
 
   if (currentChat !== fromUserId) {
     dialogs[fromUserId].unread =
@@ -707,11 +718,24 @@ input.addEventListener("input", () => {
     closeModal();
   }
 });
+
+  socket.on("messages_read", ({ fromUserId }) => {
+
+  if (!dialogs[fromUserId]) return;
+
+  dialogs[fromUserId].messages.forEach(msg => {
+    if (msg.fromMe) msg.status = "read";
+  });
+
+  saveDialogs();
+  renderMessages();
+});
   
 </script>
 
 </body>
 </html>
+
 
 
 
