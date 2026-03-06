@@ -64,7 +64,20 @@ socket.on("typing", ({ toUserId }) => {
   }
 });
 
+socket.on("messages_read", ({ fromUserId, chatUserId }) => {
+
+  const target = users[chatUserId];
+
+  if (target) {
+    io.to(target.socketId).emit("messages_read", {
+      fromUserId
+    });
+  }
+
+});
+
 server.listen(3001, () => {
   console.log("Server running on port 3001");
 });
+
 
